@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1240" viewBox="0 0 1800 1240">
+      <defs>
+      <marker id="ah" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3e4c59"/></marker>
+      <marker id="as" markerWidth="10" markerHeight="10" refX="1.5" refY="5" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#3e4c59"/></marker>
+      <marker id="ahg" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e7157b"/></marker>
+      <marker id="asg" markerWidth="10" markerHeight="10" refX="1.5" refY="5" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#e7157b"/></marker>
+      <marker id="aho" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff9900"/></marker>
+      <marker id="aso" markerWidth="10" markerHeight="10" refX="1.5" refY="5" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#ff9900"/></marker>
+      <marker id="ahm" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa5b1"/></marker>
+      <marker id="asm" markerWidth="10" markerHeight="10" refX="1.5" refY="5" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#9aa5b1"/></marker></defs>
+      <rect width="100%" height="100%" fill="#ffffff"/><text x="900" y="42" font-family="Helvetica" font-size="24" font-weight="700" fill="#1f2933" text-anchor="middle">Figure 2. Complete System Architecture and Workflow</text>
+<rect x="20" y="70" width="1760" height="210" rx="12" fill="#fbfcfd" stroke="#5a6b7b" stroke-width="2"/>
+<rect x="20" y="70" width="44" height="210" rx="10" fill="#5a6b7b"/>
+<text x="42" y="175" font-family="Helvetica" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" transform="rotate(-90 42 175)">INPUTS</text>
+<rect x="20" y="300" width="1760" height="270" rx="12" fill="#fbfcfd" stroke="#01a88d" stroke-width="2"/>
+<rect x="20" y="300" width="44" height="270" rx="10" fill="#01a88d"/>
+<text x="42" y="435" font-family="Helvetica" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" transform="rotate(-90 42 435)">OFFLINE ML PIPELINE</text>
+<rect x="20" y="590" width="1760" height="330" rx="12" fill="#fbfcfd" stroke="#ff9900" stroke-width="2"/>
+<rect x="20" y="590" width="44" height="330" rx="10" fill="#ff9900"/>
+<text x="42" y="755" font-family="Helvetica" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" transform="rotate(-90 42 755)">ONLINE PLATFORM (AWS)</text>
+<rect x="20" y="940" width="1760" height="280" rx="12" fill="#fbfcfd" stroke="#e7157b" stroke-width="2"/>
+<rect x="20" y="940" width="44" height="280" rx="10" fill="#e7157b"/>
+<text x="42" y="1080" font-family="Helvetica" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" transform="rotate(-90 42 1080)">OPS · FEEDBACK</text>
+<rect x="90" y="95" width="380" height="160" rx="10" fill="#ffffff" stroke="#5a6b7b" stroke-width="2.5"/>
+<rect x="90" y="95" width="10" height="160" rx="4" fill="#5a6b7b"/>
+<text x="285" y="149.5" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Cell-line pharmacogenomics</text>
+<text x="285" y="170.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">DepMap omics + GDSC2 ln(IC50)</text>
+<text x="285" y="191.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">(converter implemented; real-data</text>
+<text x="285" y="212.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">training planned)</text>
+<rect x="500" y="95" width="360" height="160" rx="10" fill="#ffffff" stroke="#5a6b7b" stroke-width="2.5"/>
+<rect x="500" y="95" width="10" height="160" rx="4" fill="#5a6b7b"/>
+<text x="685" y="149.5" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Synthetic multi-omics data</text>
+<text x="685" y="170.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">500 cell lines × 12 drugs</text>
+<text x="685" y="191.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">planted biomarkers (used for</text>
+<text x="685" y="212.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">all reported results)</text>
+<rect x="890" y="95" width="330" height="160" rx="10" fill="#ffffff" stroke="#5a6b7b" stroke-width="2.5"/>
+<rect x="890" y="95" width="10" height="160" rx="4" fill="#5a6b7b"/>
+<text x="1060" y="160" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Drug structures</text>
+<text x="1060" y="181" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">SMILES (PubChem)</text>
+<text x="1060" y="202" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">→ RDKit atom graphs</text>
+<rect x="1250" y="95" width="250" height="160" rx="10" fill="#ffffff" stroke="#5a6b7b" stroke-width="2.5"/>
+<rect x="1250" y="95" width="10" height="160" rx="4" fill="#5a6b7b"/>
+<text x="1380" y="160" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Patient / sample CSV</text>
+<text x="1380" y="181" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">modality, feature, value</text>
+<text x="1380" y="202" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">dashboard upload</text>
+<rect x="1530" y="95" width="230" height="160" rx="10" fill="#ffffff" stroke="#5a6b7b" stroke-width="2.5"/>
+<rect x="1530" y="95" width="10" height="160" rx="4" fill="#5a6b7b"/>
+<text x="1650" y="149.5" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Bulk cohort CSV</text>
+<text x="1650" y="170.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">sample_id, modality,</text>
+<text x="1650" y="191.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">feature, value</text>
+<text x="1650" y="212.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">→ S3 incoming/</text>
+<rect x="90" y="330" width="300" height="210" rx="10" fill="#ffffff" stroke="#01a88d" stroke-width="2.5"/>
+<rect x="90" y="330" width="10" height="210" rx="4" fill="#01a88d"/>
+<text x="245" y="399" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Preprocessing</text>
+<text x="245" y="420" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">drop features &gt;20% missing</text>
+<text x="245" y="441" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">top-variance selection</text>
+<text x="245" y="462" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">(1000/500/300/200)</text>
+<text x="245" y="483" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">z-score on training split only</text>
+<rect x="420" y="330" width="290" height="210" rx="10" fill="#ffffff" stroke="#01a88d" stroke-width="2.5"/>
+<rect x="420" y="330" width="10" height="210" rx="4" fill="#01a88d"/>
+<text x="570" y="399" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Cell-line-blind split</text>
+<text x="570" y="420" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">train / val / test</text>
+<text x="570" y="441" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">test cell lines never</text>
+<text x="570" y="462" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">seen in training</text>
+<text x="570" y="483" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">seed 42</text>
+<rect x="740" y="330" width="420" height="210" rx="10" fill="#ffffff" stroke="#01a88d" stroke-width="2.5"/>
+<rect x="740" y="330" width="10" height="210" rx="4" fill="#01a88d"/>
+<text x="955" y="399" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">DrugResponseNet (1.15 M params)</text>
+<text x="955" y="420" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">per-omics MLP encoders → 4 tokens</text>
+<text x="955" y="441" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">3-layer residual GCN drug encoder → token</text>
+<text x="955" y="462" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">Transformer fusion (2 layers, 4 heads, d=128)</text>
+<text x="955" y="483" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">[CLS] head → ln(IC50); modality masking</text>
+<rect x="1190" y="330" width="270" height="210" rx="10" fill="#ffffff" stroke="#01a88d" stroke-width="2.5"/>
+<rect x="1190" y="330" width="10" height="210" rx="4" fill="#01a88d"/>
+<text x="1330" y="399" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Evaluation</text>
+<text x="1330" y="420" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">RMSE, MAE, R², Pearson,</text>
+<text x="1330" y="441" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">Spearman; sensitive vs</text>
+<text x="1330" y="462" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">resistant: accuracy,</text>
+<text x="1330" y="483" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">precision, recall, ROC-AUC</text>
+<rect x="1490" y="330" width="270" height="210" rx="10" fill="#ffffff" stroke="#01a88d" stroke-width="2.5"/>
+<rect x="1490" y="330" width="10" height="210" rx="4" fill="#01a88d"/>
+<text x="1630" y="399" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Model artefacts</text>
+<text x="1630" y="420" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">model.pt, config.json,</text>
+<text x="1630" y="441" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">preprocessor.json,</text>
+<text x="1630" y="462" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">drugs.json</text>
+<text x="1630" y="483" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">→ model.tar.gz → S3</text>
+<rect x="90" y="625" width="290" height="260" rx="10" fill="#ffffff" stroke="#ff9900" stroke-width="2.5"/>
+<rect x="90" y="625" width="10" height="260" rx="4" fill="#ff9900"/>
+<text x="240" y="708.5" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Web dashboard</text>
+<text x="240" y="729.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">HTML/JS + Chart.js</text>
+<text x="240" y="750.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">login · upload · predict</text>
+<text x="240" y="771.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">explanation charts</text>
+<text x="240" y="792.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">history · model metrics</text>
+<text x="240" y="813.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">user admin</text>
+<rect x="410" y="625" width="330" height="260" rx="10" fill="#ffffff" stroke="#ff9900" stroke-width="2.5"/>
+<rect x="410" y="625" width="10" height="260" rx="4" fill="#ff9900"/>
+<text x="580" y="708.5" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">API Gateway → FastAPI</text>
+<text x="580" y="729.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">HTTPS front door</text>
+<text x="580" y="750.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">JWT authentication</text>
+<text x="580" y="771.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">roles: admin, researcher,</text>
+<text x="580" y="792.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">clinician (RBAC)</text>
+<text x="580" y="813.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">input validation</text>
+<rect x="770" y="625" width="400" height="260" rx="10" fill="#ffffff" stroke="#ff9900" stroke-width="2.5"/>
+<rect x="770" y="625" width="10" height="260" rx="4" fill="#ff9900"/>
+<text x="975" y="708.5" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Inference + explainability</text>
+<text x="975" y="729.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">preprocessor → DrugResponseNet</text>
+<text x="975" y="750.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">ln(IC50), IC50 (µM), sensitivity</text>
+<text x="975" y="771.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">for 12 drugs per sample</text>
+<text x="975" y="792.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">modality attention weights</text>
+<text x="975" y="813.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">gene-level gradient × input</text>
+<rect x="1200" y="625" width="270" height="120" rx="10" fill="#ffffff" stroke="#3f8624" stroke-width="2.5"/>
+<rect x="1200" y="625" width="10" height="120" rx="4" fill="#3f8624"/>
+<text x="1340" y="670" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Amazon S3</text>
+<text x="1340" y="691" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">uploads/, processed/,</text>
+<text x="1340" y="712" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">models/</text>
+<rect x="1200" y="765" width="270" height="120" rx="10" fill="#ffffff" stroke="#2e73b8" stroke-width="2.5"/>
+<rect x="1200" y="765" width="10" height="120" rx="4" fill="#2e73b8"/>
+<text x="1340" y="810" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Amazon RDS</text>
+<text x="1340" y="831" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">users, samples,</text>
+<text x="1340" y="852" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">predictions</text>
+<rect x="1500" y="625" width="260" height="260" rx="10" fill="#ffffff" stroke="#ff9900" stroke-width="2.5"/>
+<rect x="1500" y="625" width="10" height="260" rx="4" fill="#ff9900"/>
+<text x="1635" y="708.5" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Batch pipeline</text>
+<text x="1635" y="729.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">S3 incoming/*.csv</text>
+<text x="1635" y="750.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">→ Lambda validate +</text>
+<text x="1635" y="771.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">clean → processed/</text>
+<text x="1635" y="792.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">→ predictions/ (when a</text>
+<text x="1635" y="813.5" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">SageMaker endpoint exists)</text>
+<rect x="90" y="970" width="360" height="220" rx="10" fill="#ffffff" stroke="#e7157b" stroke-width="2.5"/>
+<rect x="90" y="970" width="10" height="220" rx="4" fill="#e7157b"/>
+<text x="275" y="1044" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Monitoring</text>
+<text x="275" y="1065" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">CloudWatch logs + metrics</text>
+<text x="275" y="1086" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">Predictions, PredictionLatency</text>
+<text x="275" y="1107" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">5 alarms → SNS e-mail</text>
+<text x="275" y="1128" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">dashboard drugresp-overview</text>
+<rect x="480" y="970" width="360" height="220" rx="10" fill="#ffffff" stroke="#dd344c" stroke-width="2.5"/>
+<rect x="480" y="970" width="10" height="220" rx="4" fill="#dd344c"/>
+<text x="665" y="1044" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Audit + security</text>
+<text x="665" y="1065" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">CloudTrail management events</text>
+<text x="665" y="1086" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">IAM least-privilege roles</text>
+<text x="665" y="1107" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">SSM SecureString secrets</text>
+<text x="665" y="1128" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">encryption at rest</text>
+<rect x="870" y="970" width="420" height="220" rx="10" fill="#ffffff" stroke="#e7157b" stroke-width="2.5"/>
+<rect x="870" y="970" width="10" height="220" rx="4" fill="#e7157b"/>
+<text x="1085" y="1044" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Retraining loop (human in the loop)</text>
+<text x="1085" y="1065" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">new data → S3 datasets/</text>
+<text x="1085" y="1086" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">retrain locally (free tier) or</text>
+<text x="1085" y="1107" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">SageMaker job (optional, paid)</text>
+<text x="1085" y="1128" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">review metrics → redeploy model</text>
+<rect x="1320" y="970" width="440" height="220" rx="10" fill="#ffffff" stroke="#5a6b7b" stroke-width="2.5"/>
+<rect x="1320" y="970" width="10" height="220" rx="4" fill="#5a6b7b"/>
+<text x="1545" y="1044" font-family="Helvetica" font-size="18" font-weight="700" fill="#1f2933" text-anchor="middle">Outputs</text>
+<text x="1545" y="1065" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">ranked drug list with predicted IC50</text>
+<text x="1545" y="1086" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">sensitive / resistant call</text>
+<text x="1545" y="1107" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">per-modality + per-gene explanation</text>
+<text x="1545" y="1128" font-family="Helvetica" font-size="14.5" font-weight="400" fill="#52606d" text-anchor="middle">stored history for audit</text>
+<path d="M280 255 L240 330" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)"/>
+<path d="M680 255 L300 330" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)"/>
+<path d="M1055 255 L950 330" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)"/>
+<rect x="966" y="277" width="88" height="22" rx="11" fill="#ffffff" stroke="#3e4c59" stroke-width="1.2"/>
+<text x="1010" y="293.5" font-family="Helvetica" font-size="13" font-weight="400" fill="#3e4c59" text-anchor="middle">drug graph</text>
+<path d="M390 435 L420 435" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)"/>
+<path d="M710 435 L740 435" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)"/>
+<path d="M1160 435 L1190 435" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)"/>
+<path d="M1460 435 L1490 435" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)"/>
+<path d="M1625 540 L1625 590 L1335 590 L1335 625" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)"/>
+<rect x="1450.8" y="577" width="58.400000000000006" height="22" rx="11" fill="#ffffff" stroke="#3e4c59" stroke-width="1.2"/>
+<text x="1480" y="593.5" font-family="Helvetica" font-size="13" font-weight="400" fill="#3e4c59" text-anchor="middle">deploy</text>
+<path d="M1375 255 L1375 285 L405 285 L405 603 L235 603 L235 625" fill="none" stroke="#3e4c59" stroke-width="2.2" stroke-dasharray="6 5" marker-end="url(#ah)"/>
+<rect x="237" y="590" width="162" height="22" rx="11" fill="#ffffff" stroke="#3e4c59" stroke-width="1.2"/>
+<text x="318" y="606.5" font-family="Helvetica" font-size="13" font-weight="400" fill="#3e4c59" text-anchor="middle">upload via dashboard</text>
+<path d="M1645 255 L1645 285 L1770 285 L1770 603 L1700 603 L1700 625" fill="none" stroke="#3e4c59" stroke-width="2.2" stroke-dasharray="6 5" marker-end="url(#ah)"/>
+<rect x="1649.5" y="590" width="125" height="22" rx="11" fill="#ffffff" stroke="#3e4c59" stroke-width="1.2"/>
+<text x="1712" y="606.5" font-family="Helvetica" font-size="13" font-weight="400" fill="#3e4c59" text-anchor="middle">to S3 incoming/</text>
+<path d="M380 755 L410 755" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)" marker-start="url(#as)"/>
+<path d="M740 755 L770 755" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)" marker-start="url(#as)"/>
+<path d="M1170 685 L1200 685" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)" marker-start="url(#as)"/>
+<path d="M1170 825 L1200 825" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)" marker-start="url(#as)"/>
+<path d="M1470 685 L1500 685" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)" marker-start="url(#as)"/>
+<path d="M575 885 L575 940 L270 940 L270 970" fill="none" stroke="#e7157b" stroke-width="2.2" marker-end="url(#ahg)"/>
+<rect x="361.2" y="927" width="117.60000000000001" height="22" rx="11" fill="#ffffff" stroke="#e7157b" stroke-width="1.2"/>
+<text x="420" y="943.5" font-family="Helvetica" font-size="13" font-weight="400" fill="#e7157b" text-anchor="middle">metrics + logs</text>
+<path d="M1100 885 L1100 920 L1540 920 L1540 970" fill="none" stroke="#3e4c59" stroke-width="2.2" marker-end="url(#ah)"/>
+<rect x="1287.1" y="907" width="65.80000000000001" height="22" rx="11" fill="#ffffff" stroke="#3e4c59" stroke-width="1.2"/>
+<text x="1320" y="923.5" font-family="Helvetica" font-size="13" font-weight="400" fill="#3e4c59" text-anchor="middle">results</text>
+<path d="M870 1080 L840 1080" fill="none" stroke="#e7157b" stroke-width="2.2" marker-end="url(#ahg)" marker-start="url(#asg)"/>
+<path d="M950 970 L950 885" fill="none" stroke="#e7157b" stroke-width="2.2" stroke-dasharray="6 5" marker-end="url(#ahg)"/>
+<rect x="891.2" y="915" width="117.60000000000001" height="22" rx="11" fill="#ffffff" stroke="#e7157b" stroke-width="1.2"/>
+<text x="950" y="931.5" font-family="Helvetica" font-size="13" font-weight="400" fill="#e7157b" text-anchor="middle">redeploy model</text>
+<path d="M450 1080 L480 1080" fill="none" stroke="#e7157b" stroke-width="2.2" marker-end="url(#ahg)"/></svg>
