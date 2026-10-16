@@ -1,0 +1,561 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  AI-Driven Cloud Platform for Personalized Drug Response Prediction (BITE412L).
+  VPC, S3, Lambda, RDS PostgreSQL, EC2 API server, API Gateway (HTTPS), IAM roles,
+  SSM Parameter Store secrets, CloudWatch alarms and CloudTrail. FreeTierOnly=true keeps it in the AWS free tier.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: drugresp
+    AllowedPattern: "[a-z][a-z0-9-]{2,20}"
+  InstanceType:
+    Type: String
+    Default: t3.micro   # free tier; accounts created after 15 Jul 2025 can also use c7i-flex.large / m7i-flex.large
+    AllowedValues: [t3.micro, t3.small, c7i-flex.large, m7i-flex.large, t3.medium, t3.large]
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+  HttpAllowedCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: Who may reach the EC2 web server directly on port 80
+  SageMakerEndpointName:
+    Type: String
+    Default: drugresp-endpoint
+  TrainingImage:
+    Type: String
+    Default: ""
+    Description: PyTorch training image URI for Lambda retraining (blank = AWS DLC pytorch-training 2.1 CPU in this region)
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: Optional e-mail for CloudWatch alarm notifications
+  FreeTierOnly:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: true = the Lambda never starts SageMaker training or calls an endpoint (SageMaker is not free)
+
+Conditions:
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+  DefaultTrainingImage: !Equals [!Ref TrainingImage, ""]
+  FreeTier: !Equals [!Ref FreeTierOnly, "true"]
+
+Resources:
+  # ------------------------------------------------------------------ network
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.20.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags: [{Key: Name, Value: !Sub "${ProjectName}-vpc"}]
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: {VpcId: !Ref Vpc, InternetGatewayId: !Ref InternetGateway}
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.20.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags: [{Key: Name, Value: !Sub "${ProjectName}-public-a"}]
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.20.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags: [{Key: Name, Value: !Sub "${ProjectName}-public-b"}]
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.20.11.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      Tags: [{Key: Name, Value: !Sub "${ProjectName}-private-a"}]
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.20.12.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      Tags: [{Key: Name, Value: !Sub "${ProjectName}-private-b"}]
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: {VpcId: !Ref Vpc}
+  PublicDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  PublicSubnetARoutes:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: {SubnetId: !Ref PublicSubnetA, RouteTableId: !Ref PublicRouteTable}
+  PublicSubnetBRoutes:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: {SubnetId: !Ref PublicSubnetB, RouteTableId: !Ref PublicRouteTable}
+
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: API server (HTTP only; admin access via SSM Session Manager, no SSH)
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: !Ref HttpAllowedCidr}
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: PostgreSQL reachable only from the API server
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 5432, ToPort: 5432, SourceSecurityGroupId: !Ref WebSecurityGroup}
+
+  # ------------------------------------------------------------------ storage
+  DataBucket:
+    Type: AWS::S3::Bucket
+    DependsOn: PreprocessInvokePermission
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "${ProjectName}-data-${AWS::AccountId}-${AWS::Region}"
+      VersioningConfiguration: {Status: Enabled}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-old-versions
+            Status: Enabled
+            NoncurrentVersionExpiration: {NoncurrentDays: 30}
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt PreprocessFunction.Arn
+            Filter: {S3Key: {Rules: [{Name: prefix, Value: incoming/}, {Name: suffix, Value: .csv}]}}
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt PreprocessFunction.Arn
+            Filter: {S3Key: {Rules: [{Name: prefix, Value: triggers/}, {Name: suffix, Value: retrain.json}]}}
+  DataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DataBucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource: [!GetAtt DataBucket.Arn, !Sub "${DataBucket.Arn}/*"]
+            Condition: {Bool: {aws:SecureTransport: "false"}}
+
+  # Secrets live in SSM Parameter Store (SecureString, free) under /<ProjectName>/,
+  # created by deploy_stack.sh: db-password, jwt-secret, admin-email, admin-password.
+
+  # ------------------------------------------------------------------ database
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Private subnets for RDS
+      SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: !Sub "${ProjectName}-db"
+      Engine: postgres
+      DBInstanceClass: !Ref DBInstanceClass
+      AllocatedStorage: "20"
+      StorageType: gp3
+      StorageEncrypted: true
+      DBName: drugresponse
+      MasterUsername: drugadmin
+      MasterUserPassword: !Sub "{{resolve:ssm-secure:/${ProjectName}/db-password}}"
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups: [!Ref DatabaseSecurityGroup]
+      PubliclyAccessible: false
+      BackupRetentionPeriod: 1
+      MultiAZ: false
+      EnablePerformanceInsights: false
+
+  # ------------------------------------------------------------------ IAM
+  SageMakerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-sagemaker-role"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: {Service: sagemaker.amazonaws.com}
+            Action: sts:AssumeRole
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/AmazonSageMakerFullAccess]
+      Policies:
+        - PolicyName: project-bucket
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:ListBucket, s3:DeleteObject]
+                Resource:
+                  - !Sub "arn:aws:s3:::${ProjectName}-data-${AWS::AccountId}-${AWS::Region}"
+                  - !Sub "arn:aws:s3:::${ProjectName}-data-${AWS::AccountId}-${AWS::Region}/*"
+
+  ApiServerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-ec2-role"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: {Service: ec2.amazonaws.com}
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: app-access
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:ListBucket]
+                Resource: [!GetAtt DataBucket.Arn, !Sub "${DataBucket.Arn}/*"]
+              - Effect: Allow
+                Action: [ssm:GetParameter, ssm:GetParameters]
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/*"
+              - Effect: Allow
+                Action: sagemaker:InvokeEndpoint
+                Resource: !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/${SageMakerEndpointName}"
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: "*"
+                Condition: {StringEquals: {cloudwatch:namespace: DrugResponse}}
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents, logs:DescribeLogStreams]
+                Resource: !Sub "${AppLogGroup.Arn}:*"
+  ApiServerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: {Roles: [!Ref ApiServerRole]}
+
+  PreprocessFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole]
+      Policies:
+        - PolicyName: pipeline
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject]
+                Resource: !Sub "arn:aws:s3:::${ProjectName}-data-${AWS::AccountId}-${AWS::Region}/*"
+              - Effect: Allow
+                Action: sagemaker:InvokeEndpoint
+                Resource: !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/${SageMakerEndpointName}"
+              - Effect: Allow
+                Action: [sagemaker:CreateTrainingJob, sagemaker:AddTags]
+                Resource: !Sub "arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:training-job/drugresp-*"
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource: !GetAtt SageMakerExecutionRole.Arn
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: "*"
+
+  # ------------------------------------------------------------------ Lambda
+  PreprocessFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-preprocess"
+      Runtime: python3.12
+      Handler: handler.lambda_handler
+      Code: ../lambda_preprocess/   # uploaded by `aws cloudformation package`
+      Role: !GetAtt PreprocessFunctionRole.Arn
+      Timeout: 300
+      MemorySize: 1024
+      Environment:
+        Variables:
+          ENDPOINT_NAME: !Ref SageMakerEndpointName
+          SAGEMAKER_ROLE_ARN: !GetAtt SageMakerExecutionRole.Arn
+          TRAINING_IMAGE: !If
+            - DefaultTrainingImage
+            - !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/pytorch-training:2.1.0-cpu-py310"
+            - !Ref TrainingImage
+          TRAINING_INSTANCE: ml.m5.xlarge
+          METRICS_NAMESPACE: DrugResponse
+          ENABLE_SAGEMAKER: !If [FreeTier, "false", "true"]
+  PreprocessInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PreprocessFunction
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:s3:::${ProjectName}-data-${AWS::AccountId}-${AWS::Region}"
+  PreprocessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ProjectName}-preprocess"
+      RetentionInDays: 30
+
+  # ------------------------------------------------------------------ EC2 API server
+  AppLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/${ProjectName}/api"
+      RetentionInDays: 30
+  ApiServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref PublicSubnetA
+      SecurityGroupIds: [!Ref WebSecurityGroup]
+      IamInstanceProfile: !Ref ApiServerInstanceProfile
+      MetadataOptions: {HttpTokens: required, HttpPutResponseHopLimit: 2}  # hop 2 so docker containers get role credentials
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs: {VolumeSize: 30, VolumeType: gp3, Encrypted: true}
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -eux
+          dnf install -y docker jq
+          systemctl enable --now docker
+          # 4 GB swap so a 1 GB free-tier instance can build and run the torch + RDKit image
+          if [ ! -f /swapfile ]; then
+            dd if=/dev/zero of=/swapfile bs=1M count=4096
+            chmod 600 /swapfile && mkswap /swapfile
+            echo '/swapfile none swap defaults 0 0' >> /etc/fstab
+          fi
+          swapon -a
+          mkdir -p /opt/drugresponse
+      Tags: [{Key: Name, Value: !Sub "${ProjectName}-api"}]
+  ApiServerEip:
+    Type: AWS::EC2::EIP
+    DependsOn: GatewayAttachment
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref ApiServer
+
+  # ------------------------------------------------------------------ API Gateway (HTTPS front door)
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${ProjectName}-api"
+      ProtocolType: HTTP
+  HttpApiProxyIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: HTTP_PROXY
+      IntegrationMethod: ANY
+      IntegrationUri: !Sub "http://${ApiServerEip}/{proxy}"
+      PayloadFormatVersion: "1.0"
+  HttpApiRootIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: HTTP_PROXY
+      IntegrationMethod: ANY
+      IntegrationUri: !Sub "http://${ApiServerEip}/"
+      PayloadFormatVersion: "1.0"
+  HttpApiProxyRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: ANY /{proxy+}
+      Target: !Sub "integrations/${HttpApiProxyIntegration}"
+  HttpApiRootRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: ANY /
+      Target: !Sub "integrations/${HttpApiRootIntegration}"
+  HttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: $default
+      AutoDeploy: true
+      DefaultRouteSettings: {ThrottlingBurstLimit: 50, ThrottlingRateLimit: 20}
+
+  # ------------------------------------------------------------------ monitoring
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${ProjectName}-alarms"
+  AlarmEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlertEmail
+    Properties: {TopicArn: !Ref AlarmTopic, Protocol: email, Endpoint: !Ref AlertEmail}
+  ApiCpuAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: API server CPU above 80% for 10 minutes
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions: [{Name: InstanceId, Value: !Ref ApiServer}]
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions: [!Ref AlarmTopic]
+  ApiStatusCheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: EC2 status check failed
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed
+      Dimensions: [{Name: InstanceId, Value: !Ref ApiServer}]
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions: [!Ref AlarmTopic]
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Preprocessing Lambda errors
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions: [{Name: FunctionName, Value: !Ref PreprocessFunction}]
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+  DatabaseStorageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: RDS free storage below 2 GB
+      Namespace: AWS/RDS
+      MetricName: FreeStorageSpace
+      Dimensions: [{Name: DBInstanceIdentifier, Value: !Ref Database}]
+      Statistic: Minimum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 2000000000
+      ComparisonOperator: LessThanThreshold
+      AlarmActions: [!Ref AlarmTopic]
+  ApiErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: API returned 5xx errors (custom metric from the backend)
+      Namespace: DrugResponse
+      MetricName: ServerErrors
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+  Dashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub "${ProjectName}-overview"
+      DashboardBody: !Sub |
+        {"widgets": [
+          {"type":"metric","x":0,"y":0,"width":12,"height":6,"properties":{"title":"API server CPU","region":"${AWS::Region}",
+            "metrics":[["AWS/EC2","CPUUtilization","InstanceId","${ApiServer}"]],"stat":"Average","period":300}},
+          {"type":"metric","x":12,"y":0,"width":12,"height":6,"properties":{"title":"Predictions / latency","region":"${AWS::Region}",
+            "metrics":[["DrugResponse","Predictions",{"stat":"Sum"}],["DrugResponse","PredictionLatency",{"stat":"Average","yAxis":"right"}]],"period":300}},
+          {"type":"metric","x":0,"y":6,"width":12,"height":6,"properties":{"title":"Lambda invocations / errors","region":"${AWS::Region}",
+            "metrics":[["AWS/Lambda","Invocations","FunctionName","${PreprocessFunction}"],["AWS/Lambda","Errors","FunctionName","${PreprocessFunction}"]],"stat":"Sum","period":300}},
+          {"type":"metric","x":12,"y":6,"width":12,"height":6,"properties":{"title":"RDS connections / CPU","region":"${AWS::Region}",
+            "metrics":[["AWS/RDS","DatabaseConnections","DBInstanceIdentifier","${Database}"],["AWS/RDS","CPUUtilization","DBInstanceIdentifier","${Database}",{"yAxis":"right"}]],"stat":"Average","period":300}},
+          {"type":"metric","x":0,"y":12,"width":12,"height":6,"properties":{"title":"SageMaker endpoint","region":"${AWS::Region}",
+            "metrics":[["AWS/SageMaker","Invocations","EndpointName","${SageMakerEndpointName}","VariantName","AllTraffic",{"stat":"Sum"}],
+                       ["AWS/SageMaker","ModelLatency","EndpointName","${SageMakerEndpointName}","VariantName","AllTraffic",{"stat":"Average","yAxis":"right"}]],"period":300}}
+        ]}
+
+  # ------------------------------------------------------------------ audit trail
+  TrailBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "${ProjectName}-trail-${AWS::AccountId}-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules: [{Id: expire, Status: Enabled, ExpirationInDays: 90}]
+  TrailBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TrailBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AclCheck
+            Effect: Allow
+            Principal: {Service: cloudtrail.amazonaws.com}
+            Action: s3:GetBucketAcl
+            Resource: !GetAtt TrailBucket.Arn
+          - Sid: Write
+            Effect: Allow
+            Principal: {Service: cloudtrail.amazonaws.com}
+            Action: s3:PutObject
+            Resource: !Sub "${TrailBucket.Arn}/AWSLogs/${AWS::AccountId}/*"
+            Condition: {StringEquals: {s3:x-amz-acl: bucket-owner-full-control}}
+  Trail:
+    Type: AWS::CloudTrail::Trail
+    DependsOn: TrailBucketPolicy
+    Properties:
+      TrailName: !Sub "${ProjectName}-trail"
+      S3BucketName: !Ref TrailBucket
+      IsLogging: true
+      IsMultiRegionTrail: false
+      IncludeGlobalServiceEvents: true
+      EventSelectors:
+        - ReadWriteType: All
+          IncludeManagementEvents: true   # free for the first trail; S3 data events are billed, so they are off
+
+Outputs:
+  DataBucketName:
+    Value: !Ref DataBucket
+  ApiUrl:
+    Description: HTTPS URL of the dashboard and API (API Gateway -> EC2)
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  ApiServerPublicIp:
+    Value: !Ref ApiServerEip
+  ApiServerInstanceId:
+    Value: !Ref ApiServer
+  DatabaseEndpoint:
+    Value: !GetAtt Database.Endpoint.Address
+  ParameterPrefix:
+    Description: "aws ssm get-parameter --with-decryption --name <prefix>admin-password to read the admin login"
+    Value: !Sub "/${ProjectName}/"
+  SageMakerRoleArn:
+    Value: !GetAtt SageMakerExecutionRole.Arn
+  SageMakerEndpointName:
+    Value: !Ref SageMakerEndpointName
+  AppLogGroupName:
+    Value: !Ref AppLogGroup
+  PreprocessFunctionName:
+    Value: !Ref PreprocessFunction

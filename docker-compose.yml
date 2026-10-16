@@ -1,0 +1,31 @@
+# Local full-stack run with PostgreSQL (mirrors the AWS setup without AWS).
+#   python datasets/scripts/generate_synthetic.py && PYTHONPATH=src python -m ai_model.train
+#   docker compose up --build      -> http://localhost:8000  (admin@example.com / adminpass123)
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: drugresponse
+      POSTGRES_USER: drug
+      POSTGRES_PASSWORD: drugpass
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drug"]
+      interval: 5s
+      retries: 10
+  api:
+    build: {context: ., dockerfile: src/backend/Dockerfile}
+    ports: ["8000:8000"]
+    depends_on: {db: {condition: service_healthy}}
+    environment:
+      DATABASE_URL: postgresql+psycopg2://drug:drugpass@db:5432/drugresponse
+      STORAGE_BACKEND: local
+      JWT_SECRET: local-dev-secret
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: adminpass123
+    volumes:
+      - ./models/latest:/app/models/latest:ro
+      - storage:/app/storage
+volumes:
+  pgdata:
+  storage:

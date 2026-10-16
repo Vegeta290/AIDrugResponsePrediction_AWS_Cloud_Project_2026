@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+raw/
+build/
+models/*
+!models/.gitkeep
+storage/
+.local_storage/
+.local.db
+*.db
+.server.log
+app.env
+.DS_Store
+results/last_training_job.json

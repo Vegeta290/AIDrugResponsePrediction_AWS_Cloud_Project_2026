@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drug Response Predictor</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Drug Response Predictor <span class="muted">multi-omics · AWS</span></div>
+    <nav id="nav" class="hidden">
+      <button data-view="predict" class="active">Predict</button>
+      <button data-view="history">History</button>
+      <button data-view="model">Model</button>
+      <button data-view="admin" id="nav-admin" class="hidden">Users</button>
+    </nav>
+    <div id="who" class="who hidden"><span id="who-email"></span> <span id="who-role" class="badge"></span>
+      <button id="logout" class="link">Sign out</button></div>
+  </header>
+
+  <main>
+    <!-- Login -->
+    <section id="view-login" class="card narrow">
+      <h1>Sign in</h1>
+      <form id="login-form">
+        <label>Email <input name="email" type="email" required autocomplete="username"></label>
+        <label>Password <input name="password" type="password" required minlength="8" autocomplete="current-password"></label>
+        <div class="row">
+          <button type="submit" class="primary">Sign in</button>
+          <button type="button" id="signup-btn">Create account</button>
+        </div>
+        <p id="login-error" class="error"></p>
+      </form>
+    </section>
+
+    <!-- Predict -->
+    <section id="view-predict" class="hidden">
+      <div class="grid2">
+        <div class="card">
+          <h2>1. Upload multi-omics profile</h2>
+          <p class="muted">CSV with columns <code>modality,feature,value</code> (optional <code>sample_id</code>).
+            Modalities: expression (log2 TPM+1), cnv, mutation (0/1), proteomics.
+            <a href="sample_patient.csv" download>Download example file</a></p>
+          <form id="upload-form">
+            <label>Sample name <input name="name" placeholder="e.g. Patient 017"></label>
+            <label>Cancer type <input name="cancer_type" placeholder="e.g. Lung adenocarcinoma"></label>
+            <label>File <input name="file" type="file" accept=".csv" required></label>
+            <button type="submit" class="primary">Upload</button>
+            <p id="upload-msg" class="muted"></p>
+          </form>
+        </div>
+        <div class="card">
+          <h2>2. Choose sample and drugs</h2>
+          <label>Sample <select id="sample-select"></select></label>
+          <label>Drugs <input id="drug-filter" placeholder="Filter drugs…"></label>
+          <div class="row small"><button id="all-drugs" type="button" class="link">Select all</button>
+            <button id="no-drugs" type="button" class="link">Clear</button></div>
+          <div id="drug-list" class="drug-list"></div>
+          <button id="predict-btn" class="primary">Predict drug response</button>
+          <p id="predict-msg" class="muted"></p>
+        </div>
+      </div>
+
+      <div id="results" class="card hidden">
+        <h2>Predicted response <span id="result-meta" class="muted small"></span></h2>
+        <p id="coverage" class="muted small"></p>
+        <div class="chart-box"><canvas id="ic50-chart"></canvas></div>
+        <table class="table">
+          <thead><tr><th>Drug</th><th>Predicted IC50 (µM)</th><th>ln IC50</th><th>Call</th><th></th></tr></thead>
+          <tbody id="result-rows"></tbody>
+        </table>
+        <p class="muted small">Research use only. Predictions come from models trained on cancer cell lines and are not a
+          substitute for clinical judgement.</p>
+      </div>
+
+      <div id="explain" class="card hidden">
+        <h2>Why? <span id="explain-drug"></span></h2>
+        <div class="grid2">
+          <div><h3>Modality attention</h3><div class="chart-box short"><canvas id="attn-chart"></canvas></div></div>
+          <div><h3>Top contributing features</h3>
+            <table class="table"><thead><tr><th>Feature</th><th>Modality</th><th>Effect</th></tr></thead>
+              <tbody id="feature-rows"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section id="view-history" class="hidden">
+      <div class="grid3" id="stat-tiles"></div>
+      <div class="card"><h2>Recent predictions</h2>
+        <table class="table"><thead><tr><th>When</th><th>Sample</th><th>Drug</th><th>IC50 (µM)</th><th>Call</th><th>Model</th></tr></thead>
+          <tbody id="history-rows"></tbody></table></div>
+    </section>
+
+    <!-- Model -->
+    <section id="view-model" class="hidden">
+      <div class="card"><h2>Deployed model</h2><div id="model-info"></div></div>
+      <div class="card"><h2>Held-out test performance (unseen cell lines)</h2><div class="grid3" id="metric-tiles"></div></div>
+    </section>
+
+    <!-- Admin -->
+    <section id="view-admin" class="hidden">
+      <div class="grid2">
+        <div class="card"><h2>Users</h2><table class="table"><thead><tr><th>Email</th><th>Role</th></tr></thead>
+          <tbody id="user-rows"></tbody></table></div>
+        <div class="card"><h2>Add user</h2>
+          <form id="user-form">
+            <label>Email <input name="email" type="email" required></label>
+            <label>Temporary password <input name="password" type="password" minlength="8" required></label>
+            <label>Role <select name="role"><option>researcher</option><option>clinician</option><option>admin</option></select></label>
+            <button class="primary" type="submit">Create</button>
+            <p id="user-msg" class="muted"></p>
+          </form></div>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

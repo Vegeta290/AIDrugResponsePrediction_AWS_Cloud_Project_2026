@@ -1,0 +1,6 @@
+# Everything needed to train, test and run the app locally.
+torch>=2.1
+-r src/backend/requirements.txt
+pytest>=7
+httpx>=0.25
+cfn-lint>=1.0

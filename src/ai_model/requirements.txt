@@ -1,0 +1,7 @@
+# Installed automatically by the SageMaker PyTorch containers (training + inference).
+# torch itself is provided by the container image.
+pandas>=1.5
+numpy>=1.23
+scikit-learn>=1.2
+scipy>=1.9
+rdkit>=2023.9.1

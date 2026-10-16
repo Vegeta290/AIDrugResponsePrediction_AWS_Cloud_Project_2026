@@ -1,0 +1,45 @@
+# OPTIONAL: run the API on Amazon EKS instead of a single EC2 instance (see docs/AWS_DEPLOYMENT.md, step 11).
+# Replace <ACCOUNT>, <REGION> and create the secret first:
+#   kubectl create secret generic drugresponse-env --from-env-file=app.env
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drugresponse-api
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: drugresponse-api}}
+  template:
+    metadata: {labels: {app: drugresponse-api}}
+    spec:
+      serviceAccountName: drugresponse-api   # bound to an IAM role via IRSA / EKS Pod Identity
+      containers:
+        - name: api
+          image: <ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/drugresponse-api:latest
+          ports: [{containerPort: 8000}]
+          envFrom: [{secretRef: {name: drugresponse-env}}]
+          resources:
+            requests: {cpu: 500m, memory: 1Gi}
+            limits: {cpu: "1", memory: 2Gi}
+          readinessProbe: {httpGet: {path: /health, port: 8000}, initialDelaySeconds: 20, periodSeconds: 10}
+          livenessProbe: {httpGet: {path: /health, port: 8000}, initialDelaySeconds: 60, periodSeconds: 20}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drugresponse-api
+spec:
+  type: LoadBalancer
+  selector: {app: drugresponse-api}
+  ports: [{port: 80, targetPort: 8000}]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: drugresponse-api
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: drugresponse-api}
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}

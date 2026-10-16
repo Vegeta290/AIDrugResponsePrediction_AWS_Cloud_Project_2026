@@ -1,0 +1,3 @@
+# Local machine requirements for the SageMaker launch scripts.
+sagemaker>=2.200,<3
+boto3>=1.34
